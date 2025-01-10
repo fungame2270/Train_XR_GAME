@@ -2,19 +2,23 @@ using System;
 using UnityEngine;
 using Unity.Mathematics;
 using UnityEngine.Splines;
+using System.Collections;
 using Unity.VisualScripting;
+using Meta.XR.MRUtilityKit;
 
 [RequireComponent(typeof(Rigidbody))]
 public class RailCart : MonoBehaviour
 {
     public SplineContainer rail;
 
-    private Spline currentSpline;
+    public Spline currentSpline;
     private Rigidbody rb;
     public float speed = 0f;
     public float maxSpeed; // Set your desired max speed
     private float acceleration = 1f; // Adjust this value
     private float deceleration = 1f; // Adjust this value
+
+    private GameObject lastStop;
 
     private float splinePosition = 0f;
 
@@ -26,7 +30,6 @@ public class RailCart : MonoBehaviour
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
-        currentSpline = rail[0];  // Initial spline
         Debug.Log("Created Train");
         Debug.Log(rb);
     }
@@ -58,6 +61,28 @@ public class RailCart : MonoBehaviour
 
         // Set Rigidbody velocity in the direction of movement
         rb.linearVelocity = tangent.normalized * speed;
+        checkFactoryNearby();
+    }
+
+    private void checkFactoryNearby(){
+        GameObject[] factorys = GameObject.FindGameObjectsWithTag("factory");
+
+        foreach (GameObject factory in factorys){
+            if (lastStop != factory){
+                if(Vector3.Distance(factory.transform.position,transform.position) < 1){
+                    speed = 0;
+                    StartCoroutine(CallFunctionAfterDelay(10));
+                    lastStop = factory;
+                }
+            }
+            
+        }
+    }
+
+    private IEnumerator CallFunctionAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay); // Wait for the specified time
+        speed = maxSpeed;
     }
 
     public void accel()
