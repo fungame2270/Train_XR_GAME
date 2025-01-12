@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using Unity.VisualScripting;
 
 public class spawner : MonoBehaviour
 {
@@ -16,6 +17,9 @@ public class spawner : MonoBehaviour
 
     public GameObject trainPrefab;
 
+    private MRUKRoom room = null;
+    private float maxPreviewDistance = 0.3f;
+
     private int counter = 0;
 
     private GameObject train;
@@ -23,9 +27,8 @@ public class spawner : MonoBehaviour
     public float maxRayLength = 5f;  // Maximum ray length
 
     private GameObject _spawnedAnchor;  // The instantiated anchor
-    private SpatialAnchorCoreBuildingBlock _spatialAnchorCore;  // Spatial Anchor Core
-    private SplineContainer container;
-    private Spline currenteSpline;
+    private SplineContainer splineContainer;
+    private Spline currentSpline;
 
     private RaycastHit hit;
 
@@ -34,53 +37,26 @@ public class spawner : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        // Initialize _spatialAnchorCore like before
-        _spatialAnchorCore = FindFirstObjectByType<SpatialAnchorCoreBuildingBlock>();
-
-        // Ensure _spatialAnchorCore is found
-        if (_spatialAnchorCore == null)
-        {
-            Debug.LogError("_spatialAnchorCore is null. Make sure the SpatialAnchorCoreBuildingBlock is in the scene.");
-            return;
-        }
-
-        // Instantiate the anchor prefab at a default position
-        if (AnchorPrefab != null)
-        {
-            _spawnedAnchor = Instantiate(AnchorPrefab, rayStartPoint.position, Quaternion.identity);
-        }
-        else
-        {
-            Debug.LogError("AnchorPrefab is not assigned!");
-        }
-
-        container = FindFirstObjectByType<SplineContainer>();
-        currenteSpline = container.AddSpline();
-        railsModelList.Add(currenteSpline,new List<GameObject>());
+        // Instantiate the anchor that will work as the pointer
+        _spawnedAnchor = Instantiate(AnchorPrefab, rayStartPoint.position, Quaternion.identity);
+        // Get a reference to the spline container
+        splineContainer = FindFirstObjectByType<SplineContainer>();
+        // Add a first spline to the container
+        currentSpline = splineContainer.AddSpline();
+        // Populate models' list with this new spline
+        railsModelList.Add(currentSpline,new List<GameObject>());
     }
 
-    // Update is called once per frame
     void Update()
     {
-        // Check if rayStartPoint is null
-        if (rayStartPoint == null)
-        {
-            Debug.LogError("rayStartPoint is null!");
-            return;
+
+        // Get a reference to the room
+        if (room == null){
+            room = MRUK.Instance.GetCurrentRoom();
         }
 
         // Create the ray from rayStartPoint position and forward direction
-        Ray ray = new Ray(rayStartPoint.position, rayStartPoint.forward);
-
-        // Check if MRUK.Instance is null
-        if (MRUK.Instance == null)
-        {
-            Debug.LogError("MRUK.Instance is null!");
-            return;
-        }
-
-        // Get the current room from MRUK.Instance
-        MRUKRoom room = MRUK.Instance.GetCurrentRoom();
+        Ray ray = new(rayStartPoint.position, rayStartPoint.forward);
 
         // Check if the room is null
         if (room == null)
@@ -89,33 +65,54 @@ public class spawner : MonoBehaviour
             return;
         }
 
-        // Perform the raycast
-        bool hasHit = room.Raycast(ray, maxRayLength, out hit, out MRUKAnchor anchor);
+        // Perform the raycast in the room
+        bool hasHit = room.Raycast(ray, maxRayLength, out hit);
         if (!hasHit){
             return;
         }
-        bool snap = isCloseToFirstKnot(hit.point,0.10f,out float3 returnPosition);
+
+        float3 finalPostion = hit.point;
+        Vector3 forwardDirection = Vector3.Cross(Vector3.up, hit.normal);
+        Quaternion finalRotation = Quaternion.LookRotation(forwardDirection, hit.normal);
+
+        float minDist = 0.1f;
+        bool snap = isCloseToFirstKnot(hit.point ,minDist , out float3 snapPostion, out quaternion snapRotation);
         if(snap){
-            hit.point = returnPosition;
+            finalPostion = snapPostion;
+            finalRotation = snapRotation;
         }
-        // Move the spawned anchor to the hit point
-        _spawnedAnchor.transform.position = hit.point;  // Move anchor to hit point
-        _spawnedAnchor.transform.rotation = Quaternion.LookRotation(hit.normal);  // Align anchor rotation with surface normal
+
+        // Move the spawned anchor to the desired position with the desired rotation
+        _spawnedAnchor.transform.position = finalPostion; 
+        _spawnedAnchor.transform.rotation = finalRotation;
+
+        BezierKnot previewKnot = currentSpline[currentSpline.Count - 1];
+        BezierKnot lastKnot = currentSpline[currentSpline.Count - 2];
+
+        float3 direction = math.normalize(finalPostion - lastKnot.Position);
+        finalPostion = lastKnot.Position + direction * math.min(maxPreviewDistance, math.distance(lastKnot.Position, finalPostion));
+
+        previewKnot.Position = finalPostion;
+        previewKnot.Rotation = finalRotation;
+        currentSpline.SetKnot(currentSpline.Count - 1, previewKnot);
+        spawnObjects();
     }
 
-    private bool isCloseToFirstKnot(float3 point,float distanceRequired,out float3 returnPosition){
-        if (currenteSpline.Count < 3){
-            returnPosition = new float3(0,0,0);
+    private bool isCloseToFirstKnot(float3 point,float distanceRequired, out float3 returnPosition, out quaternion returnRotation){
+        returnPosition = new float3();
+        returnRotation = new quaternion();
+        
+        if (currentSpline.Count < 3){
             return false;
         }
-        returnPosition = new float3(0f,0f,0f);
 
-        BezierKnot firstKnot = currenteSpline[0];
+        BezierKnot firstKnot = currentSpline[0];
 
         float distance = math.distance(firstKnot.Position,point);
 
-        if (distance < distanceRequired){
+        if (distance < distanceRequired && math.distance(firstKnot.Position, currentSpline[currentSpline.Count - 2].Position) < maxPreviewDistance){
             returnPosition = firstKnot.Position;
+            returnRotation = firstKnot.Rotation;
             return true;
         }
 
@@ -125,62 +122,53 @@ public class spawner : MonoBehaviour
 
     private void SpawnAnchor()
     {
-        Vector3 upDirection = hit.normal;  // This is the direction you want the top of the model to point
-        Vector3 forwardDirection = Vector3.Cross(Vector3.up, upDirection); // Cross product gives the side direction to make sure it's perpendicular
+        float minDist = 0.1f;
+        bool snap = isCloseToFirstKnot(hit.point, minDist , out float3 snapPostion, out quaternion snapRotation);
 
-        // Adjust the rotation to align the model's top (Y-axis) to the normal direction
-        Quaternion rotation = Quaternion.LookRotation(forwardDirection, upDirection);
+        if(snap && currentSpline.Count >= 3){
+            BezierKnot lastKnot = currentSpline[currentSpline.Count - 1];
+            BezierKnot firstKnot = currentSpline[0];
+            
+            // Set the tangent in and out of the last knot
+            // as the inverse of the first knot
+            lastKnot.TangentIn = -firstKnot.TangentOut;
+            lastKnot.TangentOut = -firstKnot.TangentIn;
 
-        // Create the Bezier knot and add it to the currenteSpline
-        BezierKnot knot = new BezierKnot(hit.point, 0, 0, rotation);
+            // Update the spline objects
+            spawnObjects();
 
-        currenteSpline.Add(knot);
+            // Create a new spline
+            createNewSpline();
 
-        int knotsCount = currenteSpline.Count;
-        if (knotsCount >= 2)
+            return;
+        }
+
+        BezierKnot knot = new BezierKnot(hit.point);
+        currentSpline.Add(knot);
+
+        if (currentSpline.Count >= 2)
         {
             // Set the tangent mode to AutoSmooth for the last two knots
-            currenteSpline.SetTangentMode(knotsCount - 1, TangentMode.AutoSmooth);
-            currenteSpline.SetTangentMode(knotsCount - 2, TangentMode.AutoSmooth);
+            currentSpline.SetTangentMode(currentSpline.Count - 1, TangentMode.AutoSmooth);
+            currentSpline.SetTangentMode(currentSpline.Count - 2, TangentMode.AutoSmooth);
         }
 
-        // Smoothly connect the last knot with the first knot
-        if (currenteSpline.Count > 1)
-        {
-            // Access the first and last knots
-            BezierKnot firstKnot = currenteSpline[0];
-            BezierKnot lastKnot = currenteSpline[knotsCount - 1];
-
-            // Check if the positions of the first and last knots are the same
-            if (math.all(lastKnot.Position == firstKnot.Position))
-            {
-                Debug.Log("Smoothing last knot with the first");
-
-                // Mirror the tangents between the last and first knots
-                lastKnot.TangentIn = -firstKnot.TangentOut;
-                lastKnot.TangentOut = -firstKnot.TangentIn;
-
-                // Explicitly reassign the modified knot to the currenteSpline
-                currenteSpline.SetKnot(knotsCount - 1, lastKnot);
-                spawnObjects();
-                createNewSpline();
-                return;
-            }
+        if (currentSpline.Count == 1){
+            currentSpline.Add(knot);
         }
-
 
         spawnObjects();
     }
 
     private void createNewSpline(){
-        currenteSpline = container.AddSpline();
-        railsModelList[currenteSpline] = new List<GameObject>();
+        currentSpline = splineContainer.AddSpline();
+        railsModelList[currentSpline] = new List<GameObject>();
     }
 
     private void spawnObjects(){
         float fixedDistance = 0.015f;
 
-        float splineLength = currenteSpline.GetLength();
+        float splineLength = currentSpline.GetLength();
 
         int numberObjs = Mathf.CeilToInt(splineLength / fixedDistance);
 
@@ -190,8 +178,8 @@ public class spawner : MonoBehaviour
             float distanceAlongSpline = i * fixedDistance; // Total distance to the current point
             float normalizedPosition = distanceAlongSpline / splineLength;
 
-            SplineUtility.Evaluate(currenteSpline,normalizedPosition,out float3 position,out float3 tangent,out float3 upDirection);
-            Vector3 globalPosition = container.transform.TransformPoint(position);
+            SplineUtility.Evaluate(currentSpline,normalizedPosition,out float3 position,out float3 tangent,out float3 upDirection);
+            Vector3 globalPosition = splineContainer.transform.TransformPoint(position);
 
             Quaternion rotation = Quaternion.LookRotation(tangent,upDirection);
 
@@ -208,17 +196,17 @@ public class spawner : MonoBehaviour
         GameObject newObject = Instantiate(railPrefab);
         newObject.transform.localScale = new float3(0.25f,0.25f,0.25f);
 
-        railsModelList[currenteSpline].Add(newObject);
+        railsModelList[currentSpline].Add(newObject);
 
         return newObject;
 
     }
     private void deleteRails(){
-        foreach (GameObject item in railsModelList[currenteSpline]){   
+        foreach (GameObject item in railsModelList[currentSpline]){   
             Destroy(item);
         }
 
-        railsModelList[currenteSpline].Clear();
+        railsModelList[currentSpline].Clear();
     }
 
     public void SpawTrain(){
@@ -228,7 +216,7 @@ public class spawner : MonoBehaviour
         RailCart railCart = train.GetComponent<RailCart>();
 
 
-        railCart.rail = container;
-        railCart.currentSpline = currenteSpline;
+        railCart.rail = splineContainer;
+        railCart.currentSpline = currentSpline;
     }
 }

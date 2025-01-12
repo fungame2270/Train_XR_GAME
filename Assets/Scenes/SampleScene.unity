@@ -3518,6 +3518,39 @@ MonoBehaviour:
           Category: 
         memberName: railsModelList
         _editorSelectedGizmoIndex: 0
+      - enabled: 0
+        typeName: spawner, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        attribute:
+          GizmoType: 0
+          Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+          Tweakable: 0
+          Min: 0
+          Max: 1
+          Category: 
+        memberName: room
+        _editorSelectedGizmoIndex: 0
+      - enabled: 0
+        typeName: spawner, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        attribute:
+          GizmoType: 0
+          Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+          Tweakable: 0
+          Min: 0
+          Max: 1
+          Category: 
+        memberName: splineContainer
+        _editorSelectedGizmoIndex: 0
+      - enabled: 0
+        typeName: spawner, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        attribute:
+          GizmoType: 0
+          Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+          Tweakable: 0
+          Min: 0
+          Max: 1
+          Category: 
+        memberName: currentSpline
+        _editorSelectedGizmoIndex: 0
 --- !u!1 &331463336
 GameObject:
   m_ObjectHideFlags: 0
