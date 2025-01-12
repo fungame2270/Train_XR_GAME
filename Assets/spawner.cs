@@ -16,9 +16,11 @@ public class spawner : MonoBehaviour
 
     public GameObject trainPrefab;
 
+    public GameObject wagonPrefab;
+
     private int counter = 0;
 
-    private GameObject train;
+    private int wagoncounter = 0;
     public Transform rayStartPoint;  // Ray origin point
     public float maxRayLength = 5f;  // Maximum ray length
 
@@ -222,13 +224,25 @@ public class spawner : MonoBehaviour
     }
 
     public void SpawTrain(){
-        train = Instantiate(trainPrefab);
+        GameObject train = Instantiate(trainPrefab);
         train.name = "train" + counter++;
         train.transform.position = rayStartPoint.position;
         RailCart railCart = train.GetComponent<RailCart>();
 
 
-        railCart.rail = container;
-        railCart.currentSpline = currenteSpline;
+        railCart.container = container;
+        railCart.currentSpline = null;
+        railCart.setSpeed(railCart.maxSpeed);
+    }
+
+    public void SpawnWagon(){
+        GameObject wagon = Instantiate(wagonPrefab);
+        wagon.name = "wagon" + wagoncounter++;
+        wagon.transform.position = rayStartPoint.position;
+
+        Wagon wagonScript = wagon.GetComponent<Wagon>();
+        wagonScript.container = container;
+        wagonScript.setSpeed(0);
+        wagonScript.currentSpline = null;
     }
 }

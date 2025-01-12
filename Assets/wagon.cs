@@ -9,13 +9,13 @@ using Oculus.Interaction.HandGrab;
 using Oculus.Interaction;
 
 [RequireComponent(typeof(Rigidbody))]
-public class RailCart : MonoBehaviour
+public class Wagon : MonoBehaviour
 {
     public SplineContainer container;
 
     public Spline currentSpline;
     private Rigidbody rb;
-    private float speed = 0f;
+    private float speed;
     public float maxSpeed; // Set your desired max speed
     private float acceleration = 1f; // Adjust this value
     private float deceleration = 1f; // Adjust this value
@@ -28,53 +28,71 @@ public class RailCart : MonoBehaviour
 
     public GameObject childInteract;
 
-    public GameObject backWagon = null;
+    public GameObject frontWagon = null;
+    public GameObject BackWagon = null;
+
+    private bool trainCollider = true;
 
     private bool grabbed = false;
-
-    private bool WagonColider = true;
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         grabInteractable = childInteract.GetComponent<GrabInteractable>();
-        Debug.Log("Created Train");
+        Debug.Log("Created Wagon");
         Debug.Log(rb);
-
-        
+        speed = 0f;
     }
 
-    private void OnTriggerStay(Collider colider){
-        Debug.Log(colider);
-        if(WagonColider && colider.tag == "wagon"){
-            backWagon = colider.gameObject;
-            Wagon wagon = colider.gameObject.GetComponent<Wagon>();
-            if (!wagon.getTrainColider()) return;
-            wagon.disableTrainColider();
-            wagon.frontWagon = this.gameObject;
-            wagon.currentSpline = currentSpline;
-            wagon.setSplinePosition(splinePosition);
-            wagon.setSpeed(speed);
+    public void setSpeed(float receivedSpeed){
+        speed = receivedSpeed;
+        if(BackWagon != null){
+            Wagon back = BackWagon.GetComponent<Wagon>();
+            back.setSpeed(receivedSpeed);
         }
+    }
+
+    public void setSplinePosition(float t){
+        float fixedDistance = 0.2f;
+        if(currentSpline == null){
+            return;
+        }
+        float splineLength = currentSpline.GetLength();
+        float currentDistance = t * splineLength;
+        float secondWagonDistance = currentDistance - fixedDistance;
+        secondWagonDistance = Mathf.Clamp(secondWagonDistance, 0f, splineLength);
+        splinePosition = secondWagonDistance / splineLength;
+
+    }
+    
+    public void disableTrainColider(){
+        trainCollider = false;
+    }
+
+    public bool getTrainColider(){
+        return trainCollider;
     }
 
     private void FixedUpdate()
     {   
-        if(grabInteractable != null && grabInteractable.State == InteractableState.Select){
-            if(grabbed) return;
-            WagonColider = false;
-            currentSpline = null;
-            if (backWagon != null){
-                Wagon wagon = backWagon.GetComponent<Wagon>();
-                wagon.setSpeed(0);
-            }
+        if(grabInteractable != null && grabInteractable.State == InteractableState.Select)
+        {
+            trainCollider = false;
             grabbed = true;
+            currentSpline = null;
+            setSpeed(0);
+            RailCart rail = frontWagon.GetComponent<RailCart>();
+            rail.backWagon = null;
+            Debug.Log($"Change Spline of wagon{currentSpline}");
             return;
         }
-        if(grabbed == true){
-            WagonColider = true;
+
+        if(grabbed == true)
+        {
+            trainCollider = true;
             findClosestSpline();
             grabbed = false;
         }
+
         if (currentSpline == null) return;
 
         // Ensure speed stays within valid bounds
@@ -84,8 +102,7 @@ public class RailCart : MonoBehaviour
         splinePosition += speed * Time.deltaTime / currentSpline.GetLength();
 
         // Wrap the spline position to stay within bounds
-        if (splinePosition > 1f)
-            splinePosition -= 1f;
+        if (splinePosition > 1f) splinePosition -= 1f;
 
         // Get the position and tangent along the spline
         Vector3 position = currentSpline.EvaluatePosition(splinePosition);
@@ -102,19 +119,10 @@ public class RailCart : MonoBehaviour
         rb.linearVelocity = tangent.normalized * speed; 
     }
 
-    public void setSpeed(float speed){
-        this.speed = speed;
-        if(backWagon != null){
-            Wagon back = backWagon.GetComponent<Wagon>();
-            back.setSpeed(speed);
-        }
-    }
-
     private void findClosestSpline()
     {
         if (container == null || transform == null)
         {
-            Debug.LogError("SplineContainer or target Transform is not assigned.");
             return;
         }
 
@@ -125,7 +133,6 @@ public class RailCart : MonoBehaviour
         foreach (var spline in container.Splines)
         {
             float distance = FindClosestDistanceOnSpline(spline, transform.position,out float exit_t);
-            Debug.Log($"distance:{distance}");
 
             if (distance < 0.1 && distance < closestDistance)
             {
@@ -137,12 +144,8 @@ public class RailCart : MonoBehaviour
 
         if (closestSpline != null)
         {
-            Debug.Log($"Closest Spline Found! Closest Distance: {closestDistance}");
             currentSpline = closestSpline;
-        }
-        else
-        {
-            Debug.Log("No splines found in the container.");
+            Debug.Log($"find Closest Spline at{closestDistance}");
         }
     }
 
@@ -177,6 +180,6 @@ public class RailCart : MonoBehaviour
     public IEnumerator CallFunctionAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay); // Wait for the specified time
-        setSpeed(maxSpeed);
+        speed = maxSpeed;
     }
 }
