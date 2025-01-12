@@ -29,9 +29,9 @@ public class Wagon : MonoBehaviour
     public GameObject childInteract;
 
     public GameObject frontWagon = null;
-    public GameObject BackWagon = null;
+    public GameObject backWagon = null;
 
-    private bool trainCollider = false;
+    public BoxCollider trainCollider;
 
     private bool grabbed = false;
     private void Start()
@@ -45,10 +45,23 @@ public class Wagon : MonoBehaviour
         speed = 0f;
     }
 
+    public void setWagon(GameObject wagon){
+        if(backWagon != null){
+            backWagon.GetComponent<Wagon>().setWagon(wagon);
+            return;
+        }
+        backWagon = wagon;
+        Wagon wagonS = wagon.GetComponent<Wagon>();
+        wagonS.frontWagon = this.gameObject;
+        wagonS.currentSpline = currentSpline;
+        wagonS.setSplinePosition(splinePosition);
+        wagonS.setSpeed(speed);
+    }
+
     public void setSpeed(float receivedSpeed){
         speed = receivedSpeed;
-        if(BackWagon != null){
-            Wagon back = BackWagon.GetComponent<Wagon>();
+        if(backWagon != null){
+            Wagon back = backWagon.GetComponent<Wagon>();
             back.setSpeed(receivedSpeed);
         }
     }
@@ -63,11 +76,10 @@ public class Wagon : MonoBehaviour
         float secondWagonDistance = currentDistance - fixedDistance;
         secondWagonDistance = Mathf.Clamp(secondWagonDistance, 0f, splineLength);
         splinePosition = secondWagonDistance / splineLength;
-
     }
     
     public void disableTrainColider(){
-        trainCollider = false;
+        trainCollider.enabled = false;
     }
 
     public bool getTrainColider(){
@@ -78,19 +90,33 @@ public class Wagon : MonoBehaviour
     {   
         if(grabInteractable != null && grabInteractable.State == InteractableState.Select)
         {
-            trainCollider = false;
+            trainCollider.enabled = false;
             grabbed = true;
             currentSpline = null;
             setSpeed(0);
-            RailCart rail = frontWagon.GetComponent<RailCart>();
-            rail.backWagon = null;
+            if (frontWagon != null){
+                RailCart rail = frontWagon.GetComponent<RailCart>();
+                if (rail != null)
+                rail.backWagon = null;
+                Wagon wagon = frontWagon.GetComponent<Wagon>();
+                if(wagon != null)
+                wagon.backWagon = null;
+            }
+            if(backWagon != null){
+                Wagon Swagon = backWagon.GetComponent<Wagon>();
+                Swagon.trainCollider.enabled = true;
+                Swagon.frontWagon = null;
+            }
+            
+            backWagon = null;
+            frontWagon = null;
             Debug.Log($"Change Spline of wagon{currentSpline}");
             return;
         }
 
         if(grabbed == true)
         {
-            trainCollider = true;
+            trainCollider.enabled = true;
             findClosestSpline();
             grabbed = false;
         }

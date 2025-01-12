@@ -24,9 +24,7 @@ public class RailCart : MonoBehaviour
 
     private float splinePosition = 0f;
 
-    private GrabInteractable grabInteractable;
-
-    public GameObject childInteract;
+    public GrabInteractable grabInteractable;
 
     public GameObject backWagon = null;
 
@@ -34,12 +32,11 @@ public class RailCart : MonoBehaviour
 
     private bool grabbed = false;
 
-    private bool WagonColider = false;
+    public BoxCollider wagonCollider;
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         currentSpline = null;
-        grabInteractable = childInteract.GetComponent<GrabInteractable>();
         container = FindFirstObjectByType<SplineContainer>();
         Debug.Log("Created Train");
         Debug.Log(rb);
@@ -53,34 +50,36 @@ public class RailCart : MonoBehaviour
         }
     }
 
-    private void OnTriggerStay(Collider colider){
-        if(WagonColider && colider.tag == "wagon"){
-            backWagon = colider.gameObject;
-            Wagon wagon = colider.gameObject.GetComponent<Wagon>();
-            if (!wagon.getTrainColider()) return;
-            wagon.disableTrainColider();
-            wagon.frontWagon = this.gameObject;
-            wagon.currentSpline = currentSpline;
-            wagon.setSplinePosition(splinePosition);
-            wagon.setSpeed(speed);
+    public void setWagon(GameObject wagon){
+        Wagon wagonS = wagon.GetComponent<Wagon>();
+        wagonS.disableTrainColider();
+        if(backWagon != null){
+            backWagon.GetComponent<Wagon>().setWagon(wagon);
+            return;
         }
+        backWagon = wagon;
+        wagonS.frontWagon = this.gameObject;
+        wagonS.currentSpline = currentSpline;
+        wagonS.setSplinePosition(splinePosition);
+        wagonS.setSpeed(speed);
     }
-
     private void FixedUpdate()
     {   
         if(grabInteractable != null && grabInteractable.State == InteractableState.Select){
             if(grabbed) return;
-            WagonColider = false;
+            wagonCollider.enabled = false;
             currentSpline = null;
             if (backWagon != null){
                 Wagon wagon = backWagon.GetComponent<Wagon>();
                 wagon.setSpeed(0);
+                backWagon = null;
             }
             grabbed = true;
             return;
         }
+
         if(grabbed == true){
-            WagonColider = true;
+            wagonCollider.enabled = true;
             findClosestSpline();
             grabbed = false;
         }

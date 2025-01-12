@@ -10,8 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 6686734803780790341}
   - component: {fileID: 8407488442902184604}
-  m_Layer: 0
-  m_Name: AColiderWagon
+  - component: {fileID: 6121991872694143587}
+  m_Layer: 6
+  m_Name: ColliderWagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -42,10 +43,10 @@ BoxCollider:
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 55
   m_LayerOverridePriority: 0
   m_IsTrigger: 1
   m_ProvidesContacts: 0
@@ -53,6 +54,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.04, y: 0.06, z: 0.18}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &6121991872694143587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1320796239262855373}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff5927b7f44e6004195349985337f8db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wagon: {fileID: 6298128172806285329}
 --- !u!1 &6298128172806285329
 GameObject:
   m_ObjectHideFlags: 0
@@ -170,7 +184,7 @@ MonoBehaviour:
   childInteract: {fileID: 8331153846536437707}
   frontWagon: {fileID: 0}
   BackWagon: {fileID: 0}
-  trainCollider: 0
+  trainCollider: {fileID: 8407488442902184604}
 --- !u!114 &5423190205091404002
 MonoBehaviour:
   m_ObjectHideFlags: 0
