@@ -5,6 +5,10 @@ TagManager:
   serializedVersion: 3
   tags:
   - factory
+  - trainEngine
+  - LGrab
+  - RGrab
+  - wagon
   layers:
   - Default
   - TransparentFX
