@@ -74,7 +74,7 @@ public class spawner : MonoBehaviour
 
         float3 finalPostion = hit.point;
         Vector3 forwardDirection = Vector3.Cross(Vector3.up, hit.normal);
-        Quaternion finalRotation = Quaternion.LookRotation(forwardDirection, hit.normal);
+        Quaternion finalRotation = SafeLookRotation(forwardDirection, hit.normal);
 
         float minDist = 0.1f;
         bool snap = isCloseToFirstKnot(hit.point ,minDist , out float3 snapPostion, out quaternion snapRotation);
@@ -97,6 +97,21 @@ public class spawner : MonoBehaviour
         previewKnot.Rotation = finalRotation;
         currentSpline.SetKnot(currentSpline.Count - 1, previewKnot);
         spawnObjects();
+    }
+
+    private Quaternion SafeLookRotation(Vector3 forward, Vector3 up)
+    {
+        if (forward == Vector3.zero)
+        {
+            Debug.LogWarning("Forward vector is zero. Using default forward.");
+            forward = Vector3.forward; // Default forward
+        }
+        if (up == Vector3.zero)
+        {
+            Debug.LogWarning("Up vector is zero. Using default up.");
+            up = Vector3.up; // Default up
+        }
+        return Quaternion.LookRotation(forward, up);
     }
 
     private bool isCloseToFirstKnot(float3 point,float distanceRequired, out float3 returnPosition, out quaternion returnRotation){
@@ -182,7 +197,7 @@ public class spawner : MonoBehaviour
             SplineUtility.Evaluate(currentSpline,normalizedPosition,out float3 position,out float3 tangent,out float3 upDirection);
             Vector3 globalPosition = splineContainer.transform.TransformPoint(position);
 
-            Quaternion rotation = Quaternion.LookRotation(tangent,upDirection);
+            Quaternion rotation = SafeLookRotation(tangent, upDirection);
 
             rotation *= Quaternion.Euler(0f, 90f, 0f);
 
