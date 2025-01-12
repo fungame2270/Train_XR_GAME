@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 1755209313988826831}
   - component: {fileID: -3854899050681811693}
   - component: {fileID: 6712736899318510594}
+  - component: {fileID: -1359510841640994014}
   m_Layer: 0
   m_Name: Train_Prefab
   m_TagString: trainEngine
@@ -92,7 +93,8 @@ MonoBehaviour:
   maxSpeed: 0.5
   lastStop: {fileID: 0}
   childInteract: {fileID: 8331153846536437707}
-  wagon: {fileID: 0}
+  backWagon: {fileID: 0}
+  uIController: {fileID: 0}
 --- !u!65 &6712736899318510594
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -114,6 +116,20 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.05, y: 0.1, z: 0.18}
   m_Center: {x: 0, y: 0.03, z: 0}
+--- !u!114 &-1359510841640994014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6298128172806285329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbbe0d7ef81c41f4880211eb4e54d52f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  childGrab: {fileID: 8331153846536437707}
+  train: {fileID: -3854899050681811693}
 --- !u!1 &8331153846536437707
 GameObject:
   m_ObjectHideFlags: 0

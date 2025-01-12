@@ -31,13 +31,15 @@ public class Wagon : MonoBehaviour
     public GameObject frontWagon = null;
     public GameObject BackWagon = null;
 
-    private bool trainCollider = true;
+    private bool trainCollider = false;
 
     private bool grabbed = false;
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         grabInteractable = childInteract.GetComponent<GrabInteractable>();
+        container = FindFirstObjectByType<SplineContainer>();
+        currentSpline = null;
         Debug.Log("Created Wagon");
         Debug.Log(rb);
         speed = 0f;
@@ -93,7 +95,9 @@ public class Wagon : MonoBehaviour
             grabbed = false;
         }
 
-        if (currentSpline == null) return;
+        if (currentSpline == null || container == null){
+            return;
+        }
 
         // Ensure speed stays within valid bounds
         speed = Mathf.Clamp(speed, 0f, maxSpeed);

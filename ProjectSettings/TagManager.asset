@@ -9,6 +9,7 @@ TagManager:
   - LGrab
   - RGrab
   - wagon
+  - hand
   layers:
   - Default
   - TransparentFX

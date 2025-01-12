@@ -3047,6 +3047,53 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2050020396}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &223974226
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 223974228}
+  - component: {fileID: 223974227}
+  m_Layer: 0
+  m_Name: UiController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &223974227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 223974226}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d258dbcd90539e499ce21b6198321e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TrainSpawnerPrefab: {fileID: 8947776652466679775, guid: 77ddf3a633eb410409bd2ac1445b3ce9, type: 3}
+  TrainMenuPrefab: {fileID: 5651087334918526852, guid: 1ad68286956de814aa18bc89f54c5645, type: 3}
+  spawnLocation: {fileID: 1464013617}
+--- !u!4 &223974228
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 223974226}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.000000029802322, y: 0, z: -0.000000044703484}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &231912459
 GameObject:
   m_ObjectHideFlags: 0
@@ -15237,9 +15284,9 @@ MonoBehaviour:
     Callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 330403915}
-          m_TargetAssemblyTypeName: spawner, Assembly-CSharp
-          m_MethodName: SpawTrain
+        - m_Target: {fileID: 223974227}
+          m_TargetAssemblyTypeName: UIController, Assembly-CSharp
+          m_MethodName: ToggleTrainSpawner
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
@@ -23741,3 +23788,4 @@ SceneRoots:
   - {fileID: 1076431277}
   - {fileID: 782628378}
   - {fileID: 1593300089}
+  - {fileID: 223974228}

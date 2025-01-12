@@ -30,21 +30,30 @@ public class RailCart : MonoBehaviour
 
     public GameObject backWagon = null;
 
+    public UIController uIController;
+
     private bool grabbed = false;
 
-    private bool WagonColider = true;
+    private bool WagonColider = false;
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
+        currentSpline = null;
         grabInteractable = childInteract.GetComponent<GrabInteractable>();
+        container = FindFirstObjectByType<SplineContainer>();
         Debug.Log("Created Train");
         Debug.Log(rb);
 
         
     }
 
+    private void OnTriggerEnter(Collider collider){
+        if(collider.name == "ControllerGrabLocation"){
+            uIController.spawnTrainMenu(this);
+        }
+    }
+
     private void OnTriggerStay(Collider colider){
-        Debug.Log(colider);
         if(WagonColider && colider.tag == "wagon"){
             backWagon = colider.gameObject;
             Wagon wagon = colider.gameObject.GetComponent<Wagon>();
@@ -75,7 +84,7 @@ public class RailCart : MonoBehaviour
             findClosestSpline();
             grabbed = false;
         }
-        if (currentSpline == null) return;
+        if (currentSpline == null || container == null) return;
 
         // Ensure speed stays within valid bounds
         speed = Mathf.Clamp(speed, 0f, maxSpeed);
@@ -108,6 +117,10 @@ public class RailCart : MonoBehaviour
             Wagon back = backWagon.GetComponent<Wagon>();
             back.setSpeed(speed);
         }
+    }
+
+    public float getSpeed(){
+        return speed;
     }
 
     private void findClosestSpline()
