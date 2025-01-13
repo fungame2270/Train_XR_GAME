@@ -32,20 +32,37 @@ public class RailCart : MonoBehaviour
 
     private bool grabbed = false;
 
+    private Spline memoSpline;
+
+    private float memoSplinePosition = 0f;
+
     public BoxCollider wagonCollider;
+
+    private TrainSemaphorController trainSemaphorController;
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         currentSpline = null;
+        memoSpline = null;
         container = FindFirstObjectByType<SplineContainer>();
+        trainSemaphorController = FindFirstObjectByType<TrainSemaphorController>();
         Debug.Log("Created Train");
         Debug.Log(rb);
 
         
     }
 
-    private void OnTriggerEnter(Collider collider){
-        if(collider.name == "ControllerGrabLocation"){
+    private void saveStatus(){
+        memoSpline = currentSpline;
+        memoSplinePosition = splinePosition;
+    }
+
+    public float getSplinePos(){
+        return splinePosition;
+    }
+
+    private void openUiIfStatus(){
+        if(memoSpline != null && memoSpline == currentSpline && Math.Abs(memoSplinePosition - splinePosition) < 0.2){
             uIController.spawnTrainMenu(this);
         }
     }
@@ -67,7 +84,11 @@ public class RailCart : MonoBehaviour
     {   
         if(grabInteractable != null && grabInteractable.State == InteractableState.Select){
             if(grabbed) return;
+            saveStatus();
             wagonCollider.enabled = false;
+            if(currentSpline != null){
+                trainSemaphorController.unregisterTrain(this);
+            }
             currentSpline = null;
             if (backWagon != null){
                 Wagon wagon = backWagon.GetComponent<Wagon>();
@@ -81,6 +102,8 @@ public class RailCart : MonoBehaviour
         if(grabbed == true){
             wagonCollider.enabled = true;
             findClosestSpline();
+            openUiIfStatus();
+            trainSemaphorController.registerTrain(this);
             grabbed = false;
         }
         if (currentSpline == null || container == null) return;

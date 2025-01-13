@@ -30,6 +30,7 @@ public class UIController : MonoBehaviour
         }else{
             trainSpawner = Instantiate(TrainSpawnerPrefab);
             trainSpawner.transform.position = spawnLocation.position;
+            trainMenu.transform.rotation = spawnLocation.transform.rotation;
         }
     }
 
@@ -48,5 +49,11 @@ public class UIController : MonoBehaviour
         TrainMenu script = trainMenu.GetComponent<TrainMenu>();
         script.train = train;
         trainMenu.transform.position = spawnLocation.transform.position + new Vector3(0.1f,0.1f,0.1f);
+    }
+
+    public void CloseTrainMenu(){
+        if(trainMenu != null){
+            Destroy(trainMenu);
+        }
     }
 }
