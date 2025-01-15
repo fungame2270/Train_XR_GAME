@@ -17686,10 +17686,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SpawnOnStart: 1
   SpawnObject: {fileID: 2355364995977064865, guid: 6c50108f40443954b9760a59c3934071, type: 3}
-  SpawnAmount: 3
+  SpawnAmount: 5
   MaxIterations: 1000
   SpawnLocations: 3
-  Labels: -1
+  Labels: 65529
   CheckOverlaps: 0
   OverrideBounds: -1
   LayerMask:

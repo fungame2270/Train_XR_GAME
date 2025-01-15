@@ -7,6 +7,7 @@ using Unity.VisualScripting;
 using Meta.XR.MRUtilityKit;
 using Oculus.Interaction.HandGrab;
 using Oculus.Interaction;
+using System.Threading;
 
 [RequireComponent(typeof(Rigidbody))]
 public class RailCart : MonoBehaviour
@@ -39,6 +40,12 @@ public class RailCart : MonoBehaviour
     public BoxCollider wagonCollider;
 
     private TrainSemaphorController trainSemaphorController;
+
+    private Semaphor lastSemaphor;
+
+    public bool running;
+
+    public OVRInput.Button TriggerButton;
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -50,6 +57,14 @@ public class RailCart : MonoBehaviour
         Debug.Log(rb);
 
         
+    }
+
+    public Semaphor getLastSemaphore(){
+        return lastSemaphor;
+    }
+
+    public void setLastSemaphore(Semaphor semaphor){
+        lastSemaphor = semaphor;
     }
 
     private void saveStatus(){
@@ -80,6 +95,15 @@ public class RailCart : MonoBehaviour
         wagonS.setSplinePosition(splinePosition);
         wagonS.setSpeed(speed);
     }
+
+    private void OnTriggerStay(Collider collider){
+        if(collider.name == "ControllerGrabLocation"){
+            if(OVRInput.GetDown(TriggerButton,OVRInput.Controller.RTouch)){
+                uIController.spawnTrainMenu(this);
+            }
+        }
+    }
+
     private void FixedUpdate()
     {   
         if(grabInteractable != null && grabInteractable.State == InteractableState.Select){
@@ -87,8 +111,10 @@ public class RailCart : MonoBehaviour
             saveStatus();
             wagonCollider.enabled = false;
             if(currentSpline != null){
+                Debug.Log("unregesteringTrain");
                 trainSemaphorController.unregisterTrain(this);
             }
+            Debug.Log($"semaphore:{lastSemaphor}");
             currentSpline = null;
             if (backWagon != null){
                 Wagon wagon = backWagon.GetComponent<Wagon>();
@@ -102,7 +128,7 @@ public class RailCart : MonoBehaviour
         if(grabbed == true){
             wagonCollider.enabled = true;
             findClosestSpline();
-            openUiIfStatus();
+            //openUiIfStatus();
             trainSemaphorController.registerTrain(this);
             grabbed = false;
         }
@@ -134,6 +160,9 @@ public class RailCart : MonoBehaviour
     }
 
     public void setSpeed(float speed){
+        if(!running){
+            speed = 0;
+        }
         this.speed = speed;
         if(backWagon != null){
             Wagon back = backWagon.GetComponent<Wagon>();

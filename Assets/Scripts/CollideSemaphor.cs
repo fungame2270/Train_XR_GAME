@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class CollideSemaphor : MonoBehaviour
@@ -27,6 +28,14 @@ public class CollideSemaphor : MonoBehaviour
             }else{
                 railCart.setSpeed(0);
             }
+        }
+    }
+
+    private void OnTriggerExit(Collider collider){
+        if(collider.name == "Cube"){
+            SemaphorColliderStatus status = collider.gameObject.GetComponent<SemaphorColliderStatus>();
+            Semaphor semaphore = status.semaphore;
+            trainSemaphorController.trainUpdate(semaphore,railCart);
         }
     }
 }

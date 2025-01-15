@@ -1,4 +1,6 @@
 using UnityEngine;
+using Oculus.Platform;
+using Oculus.Platform.Models;
 
 public class UIController : MonoBehaviour
 {
@@ -15,7 +17,7 @@ public class UIController : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        OVRManager.boundary.SetVisible(false);
     }
 
     // Update is called once per frame

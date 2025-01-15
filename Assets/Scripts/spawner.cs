@@ -86,6 +86,10 @@ public class spawner : MonoBehaviour
         // Move the spawned anchor to the desired position with the desired rotation
         _spawnedAnchor.transform.position = finalPostion; 
         _spawnedAnchor.transform.rotation = finalRotation;
+        
+        if(currentSpline.Count < 2){
+            return;
+        }
 
         BezierKnot previewKnot = currentSpline[currentSpline.Count - 1];
         BezierKnot lastKnot = currentSpline[currentSpline.Count - 2];
@@ -150,9 +154,6 @@ public class spawner : MonoBehaviour
             lastKnot.TangentIn = -firstKnot.TangentOut;
             lastKnot.TangentOut = -firstKnot.TangentIn;
 
-            // Update the spline objects
-            spawnObjects();
-
             // Create a new spline
             createNewSpline();
 
@@ -173,7 +174,6 @@ public class spawner : MonoBehaviour
             currentSpline.Add(knot);
         }
 
-        spawnObjects();
     }
 
     private void createNewSpline(){

@@ -1,116 +1,102 @@
 using System.Collections.Generic;
+using System.Linq;
+using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Splines;
 
 public class TrainSemaphorController : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
+    private Dictionary<Spline,SortedList<float,Semaphor>> semaphors = new Dictionary<Spline, SortedList<float,Semaphor>>();
+    private Dictionary<Semaphor,List<RailCart>> Sections = new Dictionary<Semaphor, List<RailCart>>();
 
-    private Dictionary<Spline,List<RailCart>> trains = new Dictionary<Spline, List<RailCart>>();
-    private Dictionary<Spline,List<Semaphor>> semaphors = new Dictionary<Spline, List<Semaphor>>();
+    private int getPreviousSemaphoreIndex(float number,Spline spline){
+        List<float> keys = new List<float>(semaphors[spline].Keys);
+
+        int index = keys.BinarySearch(number);
+
+        if (index < 0)
+        {
+            index = ~index;
+            index = (index == 0) ? semaphors[spline].Count - 1 : index - 1;
+        }
+
+        return index;
+    }
     
     public void registerTrain(RailCart train){
-        if(!trains.ContainsKey(train.currentSpline)){
-            trains.Add(train.currentSpline,new List<RailCart>());
-        }
-        trains[train.currentSpline].Add(train);
+        if(!semaphors.Any() || !semaphors[train.currentSpline].Any()) return;
+        List<Semaphor> localSemaphores = new List<Semaphor>(semaphors[train.currentSpline].Values);
+        if(!localSemaphores.Any()) return;
+        
+        int index = getPreviousSemaphoreIndex(train.getSplinePos(),train.currentSpline);
+        Semaphor previous = localSemaphores[index];
+
+        Sections[previous].Add(train);
+        train.setLastSemaphore(previous);
     }
 
     public void registerSemaphor(Semaphor semaphor){
-        if(!semaphors.ContainsKey(semaphor.getCurrentSpline())){
-            semaphors.Add(semaphor.getCurrentSpline(),new List<Semaphor>());
+        List<RailCart> toAdd;
+        if(semaphors.Any()){
+            int index = getPreviousSemaphoreIndex(semaphor.getSplinePos(),semaphor.getCurrentSpline());
+            List<Semaphor> localSemaphores = new List<Semaphor>(semaphors[semaphor.getCurrentSpline()].Values);
+            Semaphor previous = localSemaphores[index];
+            toAdd = new List<RailCart>();
+            foreach(var train in Sections[previous]){
+                train.setLastSemaphore(semaphor);
+                toAdd.Add(train);
+            }
+            Sections[previous] = new List<RailCart>();
+        }else{
+            toAdd = new List<RailCart>();
         }
-        semaphors[semaphor.getCurrentSpline()].Add(semaphor);
+        if(!semaphors.ContainsKey(semaphor.getCurrentSpline())){
+            semaphors.Add(semaphor.getCurrentSpline(),new SortedList<float, Semaphor>());
+        }
+        semaphors[semaphor.getCurrentSpline()].Add(semaphor.getSplinePos(),semaphor);
+        Sections.Add(semaphor,toAdd);
     }
     public void unregisterSemaphor(Semaphor semaphor){
-        if(!semaphors.ContainsKey(semaphor.getCurrentSpline())){
-            semaphors.Add(semaphor.getCurrentSpline(),new List<Semaphor>());
+        if(semaphors[semaphor.getCurrentSpline()].Count > 1){
+            int index = getPreviousSemaphoreIndex(semaphor.getSplinePos(),semaphor.getCurrentSpline());
+            List<Semaphor> localSemaphores = new List<Semaphor>(semaphors[semaphor.getCurrentSpline()].Values);
+            Semaphor prevSemaphor = localSemaphores[index];
+            List<RailCart> newList = new List<RailCart>();
+            foreach(var train in Sections[semaphor]){
+                newList.Add(train);
+                train.setLastSemaphore(prevSemaphor);
+            }
+            Sections[prevSemaphor] = newList;
         }
-        semaphors[semaphor.getCurrentSpline()].Remove(semaphor);
+        if(!semaphors.ContainsKey(semaphor.getCurrentSpline())){
+            semaphors.Add(semaphor.getCurrentSpline(),new SortedList<float, Semaphor>());
+        }
+        semaphors[semaphor.getCurrentSpline()].Remove(semaphor.getSplinePos());
+        Sections.Remove(semaphor);
     }
 
 
     public void unregisterTrain(RailCart train){
-        if(!trains.ContainsKey(train.currentSpline)){
-            trains.Add(train.currentSpline,new List<RailCart>());
-        }
-        trains[train.currentSpline].Remove(train);
+        Semaphor lastSemaphore = train.getLastSemaphore();
+        train.setLastSemaphore(null);
+        if (lastSemaphore == null || !Sections.ContainsKey(lastSemaphore)) return;
+        Sections[lastSemaphore].Remove(train);
+    }
+
+    public void trainUpdate(Semaphor semaphorHit,RailCart train){
+        Debug.Log($"Train:{train}");
+        Debug.Log($"TrainLastSemaphor:{train.getLastSemaphore()}");
+        Debug.Log($"SemaphoreHit:{semaphorHit}");
+        if(train.getLastSemaphore() == null || !Sections.ContainsKey(train.getLastSemaphore())) return;
+        Sections[train.getLastSemaphore()].Remove(train);
+        Sections[semaphorHit].Add(train);
+        train.setLastSemaphore(semaphorHit);
     }
 
     public bool checkAvailable(Semaphor semaphor)
     {
-        Spline currentSpline = semaphor.getCurrentSpline();
-
-        // Check if the spline is being tracked
-        if (!semaphors.ContainsKey(currentSpline))
-        {
-            Debug.LogWarning("Spline is not registered with any semaphores.");
-            return true; // If no semaphores are registered, assume it's available
-        }
-
-        // Get all semaphores for this spline
-        List<Semaphor> splineSemaphores = semaphors[currentSpline];
-
-        // Ensure the semaphore exists in the list
-        if (!splineSemaphores.Contains(semaphor))
-        {
-            Debug.LogWarning("Semaphore is not registered on its current spline.");
-            return true; // If semaphore isn't registered, assume it's available
-        }
-
-        // Find the next semaphore by comparing positions
-        float semaphorPosition = semaphor.getSplinePos();
-        Semaphor nextSemaphor = null;
-        float minDistance = float.MaxValue;
-
-        foreach (var other in splineSemaphores)
-        {
-            if (other == semaphor) continue;
-
-            float otherPosition = other.getSplinePos();
-            float distance = otherPosition >= semaphorPosition ? otherPosition - semaphorPosition : 1.0f - semaphorPosition + otherPosition; // Account for looping
-
-            if (distance < minDistance)
-            {
-                minDistance = distance;
-                nextSemaphor = other;
-            }
-        }
-
-        if (nextSemaphor == null)
-        {
-            Debug.LogError("No valid next semaphore found.");
-            return true; // If no next semaphore, assume it's available
-        }
-
-        // Check if any trains are between the two semaphores
-        if (trains.ContainsKey(currentSpline))
-        {
-            List<RailCart> splineTrains = trains[currentSpline];
-
-            foreach (RailCart train in splineTrains)
-            {
-                float trainPosition = train.getSplinePos(); // Assume this method gives normalized position
-                float startPosition = semaphor.getSplinePos();
-                float endPosition = nextSemaphor.getSplinePos();
-
-
-                // Normalize positions for looping splines
-                if (endPosition < startPosition){
-                    endPosition += 1.0f;
-                    trainPosition += 1.0f;
-                } 
-
-                if (trainPosition >= startPosition && trainPosition <= endPosition)
-                {
-                    Debug.Log("Train Is in Segment");
-                    return false; // A train is occupying the segment
-                }
-            }
-        }
-
-        // No trains are between the two semaphores, so the segment is available
-        return true;
+        return !Sections[semaphor].Any();
     }
 
 }

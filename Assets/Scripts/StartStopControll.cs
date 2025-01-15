@@ -9,6 +9,11 @@ public class StartStopControll : MonoBehaviour
     void Start()
     {
         renderer_ = GetComponent<Renderer>();
+        if(trainMenu.train.running){
+            renderer_.material.SetColor("_Color",Color.green);
+        }else{
+            renderer_.material.SetColor("_Color",Color.red);
+        }
     }
 
     // Update is called once per frame
@@ -21,9 +26,11 @@ public class StartStopControll : MonoBehaviour
         if(collider.name == "ControllerGrabLocation"){
             RailCart train = trainMenu.train;
             if(train.getSpeed() == train.maxSpeed){
+                train.running = false;
                 train.setSpeed(0);
                 renderer_.material.SetColor("_Color",Color.red);
             }else{
+                train.running = true;
                 train.setSpeed(train.maxSpeed);
                 renderer_.material.SetColor("_Color",Color.green);
             }
